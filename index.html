@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>수력발전소 - 수력충전 수학 스케줄러</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts (Fredoka for English, Noto Sans KR for Korean) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <!-- React and ReactDOM -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel for JSX -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.20/babel.min.js"></script>
+  
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .fancy-font {
+      font-family: 'Fredoka', 'Noto Sans KR', sans-serif;
+    }
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    @keyframes pulse-gold {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4)); }
+      50% { transform: scale(1.03); filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.8)); }
+    }
+    .boss-banner {
+      animation: pulse-gold 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <div id="root"></div>
+
+  <!-- React Code with Babel -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    const CURRICULUM_DATA = [
+      {
+        id: "m21",
+        title: "중학 2-1",
+        chapters: [
+          { major: 1, minorCount: 12 },
+          { major: 2, minorCount: 14 },
+          { major: 3, minorCount: 11 },
+          { major: 4, minorCount: 12 },
+          { major: 5, minorCount: 25 }
+        ]
+      },
+      {
+        id: "m22",
+        title: "중학 2-2",
+        chapters: [
+          { major: 1, minorCount: 20 },
+          { major: 2, minorCount: 18 },
+          { major: 3, minorCount: 36 },
+          { major: 4, minorCount: 15 }
+        ]
+      },
+      {
+        id: "m31",
+        title: "중학 3-1",
+        chapters: [
+          { major: 1, minorCount: 27 },
+          { major: 2, minorCount: 21 },
+          { major: 3, minorCount: 14 },
+          { major: 4, minorCount: 13 }
+        ]
+      },
+      {
+        id: "m32",
+        title: "중학 3-2",
+        chapters: [
+          { major: 5, minorCount: 15 },
+          { major: 6, minorCount: 14 },
+          { major: 7, minorCount: 8 }
+        ]
+      },
+      {
+        id: "h11",
+        title: "고등 공통수학 1",
+        chapters: [
+          { major: 1, minorCount: 15 },
+          { major: 2, minorCount: 24 },
+          { major: 3, minorCount: 14 }
+        ]
+      },
+      {
+        id: "h12",
+        title: "고등 공통수학 2",
+        chapters: [
+          { major: 1, minorCount: 14 },
+          { major: 2, minorCount: 18 },
+          { major: 3, minorCount: 20 }
+        ]
+      },
+      {
+        id: "hmath1",
+        title: "고등 수학 I",
+        chapters: [
+          { major: 1, minorCount: 18 },
+          { major: 2, minorCount: 22 },
+          { major: 3, minorCount: 16 }
+        ]
+      },
+      {
+        id: "hmath2",
+        title: "고등 수학 II",
+        chapters: [
+          { major: 1, minorCount: 12 },
+          { major: 2, minorCount: 24 },
+          { major: 3, minorCount: 18 }
+        ]
+      },
+      {
+        id: "hcalculus",
+        title: "고등 미적분",
+        chapters: [
+          { major: 1, minorCount: 15 },
+          { major: 2, minorCount: 28 },
+          { major: 3, minorCount: 22 }
+        ]
+      },
+      {
+        id: "hprob",
+        title: "고등 확률과 통계",
+        chapters: [
+          { major: 1, minorCount: 16 },
+          { major: 2, minorCount: 18 },
+          { major: 3, minorCount: 20 }
+        ]
+      }
+    ];
+
+    const BADGES = [
+      { level: 1, title: "꼬마 발전기 ⚡", desc: "수학 발전소의 첫 불을 밝혔습니다!", icon: "zap", color: "text-amber-500 bg-amber-50" },
+      { level: 10, title: "소수 정전기 🎈", desc: "개념을 수집하며 정전기가 지지직!", icon: "sparkles", color: "text-emerald-500 bg-emerald-50" },
+      { level: 25, title: "일차식 탐사선 🚀", desc: "미지의 미지수 X를 찾는 모험가!", icon: "send", color: "text-cyan-500 bg-cyan-50" },
+      { level: 50, title: "함수의 마법사 🔮", desc: "입력값과 출력값을 조종하는 마스터!", icon: "wand2", color: "text-purple-500 bg-purple-50" },
+      { level: 100, title: "피타고라스의 후예 📐", desc: "도형의 완벽한 비례를 통달한 지혜!", icon: "triangle", color: "text-indigo-500 bg-indigo-50" },
+      { level: 200, title: "미적분의 지배자 ♾️", desc: "변화율과 넓이를 마음대로 다루는 신!", icon: "gauge", color: "text-rose-500 bg-rose-50" }
+    ];
+
+    const getLocalDateString = (dateObj) => {
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // 중학 수학 테마 색상 확실히 대조나게 교체 (오렌지, 라임, 시안, 푸시아)
+    const getBookTheme = (bookId, major) => {
+      const themes = {
+        m21: { bg: "bg-orange-50/90", border: "border-orange-300", text: "text-orange-700", dot: "bg-orange-500", badge: "bg-orange-100 text-orange-800" },
+        m22: { bg: "bg-lime-50/90", border: "border-lime-300", text: "text-lime-700", dot: "bg-lime-500", badge: "bg-lime-100 text-lime-800" },
+        m31: { bg: "bg-cyan-50/90", border: "border-cyan-300", text: "text-cyan-700", dot: "bg-cyan-500", badge: "bg-cyan-100 text-cyan-800" },
+        m32: { bg: "bg-fuchsia-50/90", border: "border-fuchsia-300", text: "text-fuchsia-700", dot: "bg-fuchsia-500", badge: "bg-fuchsia-100 text-fuchsia-800" },
+        h11: { bg: "bg-indigo-50/90", border: "border-indigo-300", text: "text-indigo-700", dot: "bg-indigo-500", badge: "bg-indigo-100 text-indigo-800" },
+        h12: { bg: "bg-blue-50/90", border: "border-blue-300", text: "text-blue-700", dot: "bg-blue-500", badge: "bg-blue-100 text-blue-800" },
+        hmath1: { bg: "bg-violet-50/90", border: "border-violet-300", text: "text-violet-700", dot: "bg-violet-500", badge: "bg-violet-100 text-violet-800" },
+        hmath2: { bg: "bg-purple-50/90", border: "border-purple-300", text: "text-purple-700", dot: "bg-purple-500", badge: "bg-purple-100 text-purple-800" },
+        hcalculus: { bg: "bg-rose-50/90", border: "border-rose-300", text: "text-rose-700", dot: "bg-rose-500", badge: "bg-rose-100 text-rose-800" },
+        hprob: { bg: "bg-amber-50/90", border: "border-amber-300", text: "text-amber-700", dot: "bg-amber-500", badge: "bg-amber-100 text-amber-800" }
+      };
+      const base = themes[bookId] || themes.m21;
+      return {
+        ...base,
+        borderClass: `${base.border} border-solid border-2`,
+        badgeClass: base.badge,
+        bgClass: base.bg
+      };
+    };
+
+    function App() {
+      const [startDate, setStartDate] = useState(() => {
+        const today = new Date();
+        return getLocalDateString(today);
+      });
+      
+      const [bookPaces, setBookPaces] = useState({
+        m21: 2, m22: 2, m31: 2, m32: 2, h11: 2, h12: 2, hmath1: 2, hmath2: 2, hcalculus: 2, hprob: 2
+      });
+
+      const [activeDays, setActiveDays] = useState([1, 2, 3, 4, 5]); // 기본 평일 공부
+      const [skippedDates, setSkippedDates] = useState([]); // 강제 쉬는 날 리스트 (YYYY-MM-DD)
+      const [forcedStudyDates, setForcedStudyDates] = useState([]); // 강제 공부하는 날 리스트 (우선순위 요일보다 위)
+      
+      const [completedChapterDates, setCompletedChapterDates] = useState({}); // { [globalIdx]: "YYYY-MM-DD" }
+      const [customPaceOverrides, setCustomPaceOverrides] = useState({}); 
+      const [selectedDateStr, setSelectedDateStr] = useState(null); 
+      const [currentMonth, setCurrentMonth] = useState(new Date()); 
+      const [notification, setNotification] = useState(null); 
+      const [showIntro, setShowIntro] = useState(true); 
+      const [showBookPaceSettings, setShowBookPaceSettings] = useState(false); 
+
+      // 전체 마스터 소단원 600여개 타임라인 평탄화
+      const masterChapters = useMemo(() => {
+        let globalCounter = 0;
+        const list = [];
+        CURRICULUM_DATA.forEach((book, bookIdx) => {
+          book.chapters.forEach(ch => {
+            for (let step = 1; step <= ch.minorCount; step++) {
+              list.push({
+                globalIdx: globalCounter++,
+                bookId: book.id,
+                bookTitle: book.title,
+                bookIdx: bookIdx,
+                major: ch.major,
+                minor: step,
+                idStr: `${book.id}-${ch.major}-${step}`
+              });
+            }
+          });
+        });
+        return list;
+      }, []);
+
+      const completedChapterIndices = useMemo(() => {
+        return Object.keys(completedChapterDates).map(Number).sort((a, b) => a - b);
+      }, [completedChapterDates]);
+
+      // 미완료 중 최우선 단원
+      const firstUncompletedIdx = useMemo(() => {
+        for (let i = 0; i < masterChapters.length; i++) {
+          if (!completedChapterDates[masterChapters[i].globalIdx]) {
+            return i;
+          }
+        }
+        return masterChapters.length;
+      }, [masterChapters, completedChapterDates]);
+
+      // 워터 필링(Water-Filling) 잔여 분량 스마트 분배 스케줄링 알고리즘
+      const generatedSchedule = useMemo(() => {
+        if (masterChapters.length === 0) return {};
+
+        const schedule = {};
+        
+        // 1단계: 완료된 단원들은 기록된 완료 날짜에 단단하게 강제 배정 (흔들림 원천 방어)
+        Object.entries(completedChapterDates).forEach(([idxStr, dateStr]) => {
+          const idx = parseInt(idxStr, 10);
+          const chObj = masterChapters[idx];
+          if (!chObj) return;
+
+          if (!schedule[dateStr]) {
+            schedule[dateStr] = {
+              dateStr,
+              isRestDay: false,
+              chapters: [],
+              pace: 0
+            };
+          }
+          schedule[dateStr].chapters.push(chObj);
+        });
+
+        // 각 고정 날짜 소단원 정렬
+        Object.keys(schedule).forEach(dStr => {
+          schedule[dStr].chapters.sort((a, b) => a.globalIdx - b.globalIdx);
+        });
+
+        // 2단계: 아직 완료하지 못한 잔여 단원들을 오늘을 기점으로 동적 워터 필링 배정
+        const todayStr = getLocalDateString(new Date());
+        let uncompletedChapters = masterChapters.filter(ch => !completedChapterDates[ch.globalIdx]);
+        let uncompletedPointer = 0;
+
+        // 시작 기준일: 미래면 시작일 기준, 이미 지났다면 오늘 기준
+        const startPivotDate = new Date(startDate) > new Date(todayStr) ? new Date(startDate) : new Date(todayStr);
+        let currentDate = new Date(startPivotDate);
+        const maxSafetyDays = 1500;
+        let safetyCounter = 0;
+
+        while (uncompletedPointer < uncompletedChapters.length && safetyCounter < maxSafetyDays) {
+          safetyCounter++;
+          const dateStr = getLocalDateString(currentDate);
+          const dayOfWeek = currentDate.getDay();
+
+          // 요청 5: 수동 override 설정이 요일 활성화 필터보다 최우선 적용되도록 함
+          const isManuallySkipped = skippedDates.includes(dateStr);
+          const isManuallyStudied = forcedStudyDates.includes(dateStr);
+          const isDayNormallyActive = activeDays.includes(dayOfWeek);
+
+          const isStudyDay = isManuallyStudied || (isDayNormallyActive && !isManuallySkipped);
+
+          if (!isStudyDay) {
+            // 휴식일이지만 이미 완료된 것이 있다면 휴식일 정보로 완전히 덮지 않고 살림
+            if (!schedule[dateStr]) {
+              schedule[dateStr] = {
+                dateStr,
+                isRestDay: true,
+                chapters: [],
+                reason: isManuallySkipped ? "내가 지정한 쉬는 날! 🎉" : "학습 요일이 아니에요 💤"
+              };
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+            continue;
+          }
+
+          // 해당 단원의 책 기본 하루 분량
+          const activeBookId = uncompletedChapters[uncompletedPointer].bookId;
+          const defaultBookPace = bookPaces[activeBookId] || 2;
+          
+          // 임의 설정 하루 분량
+          const targetPace = customPaceOverrides[dateStr] !== undefined ? customPaceOverrides[dateStr] : defaultBookPace;
+
+          if (targetPace === 0) {
+            if (!schedule[dateStr]) {
+              schedule[dateStr] = {
+                dateStr,
+                isRestDay: true,
+                chapters: [],
+                reason: "공부량 0개 설정일 🏖️"
+              };
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+            continue;
+          }
+
+          // 이미 이 날짜에 채워져 완료된 개수 확인
+          const preAssignedCount = schedule[dateStr] ? schedule[dateStr].chapters.length : 0;
+          const remainingCapacity = targetPace - preAssignedCount;
+
+          if (!schedule[dateStr]) {
+            schedule[dateStr] = {
+              dateStr,
+              isRestDay: false,
+              chapters: [],
+              pace: targetPace
+            };
+          } else {
+            schedule[dateStr].pace = targetPace;
+          }
+
+          // 남은 공간에 아직 완료 안 된 가장 빠른 소단원 추가
+          let addedCount = 0;
+          while (addedCount < remainingCapacity && uncompletedPointer < uncompletedChapters.length) {
+            schedule[dateStr].chapters.push(uncompletedChapters[uncompletedPointer]);
+            uncompletedPointer++;
+            addedCount++;
+          }
+
+          // 정렬 고정
+          schedule[dateStr].chapters.sort((a, b) => a.globalIdx - b.globalIdx);
+
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        return schedule;
+      }, [masterChapters, completedChapterDates, startDate, activeDays, skippedDates, forcedStudyDates, bookPaces, customPaceOverrides]);
+
+      const selectedDateDetails = useMemo(() => {
+        if (!selectedDateStr) return null;
+        return generatedSchedule[selectedDateStr] || {
+          dateStr: selectedDateStr,
+          isRestDay: true,
+          chapters: [],
+          reason: "배정 정보 없음"
+        };
+      }, [selectedDateStr, generatedSchedule]);
+
+      const activeStats = useMemo(() => {
+        const currentCh = masterChapters[firstUncompletedIdx] || masterChapters[masterChapters.length - 1];
+        const currentBook = CURRICULUM_DATA.find(b => b.id === currentCh.bookId) || CURRICULUM_DATA[0];
+
+        const sameBookChapters = masterChapters.filter(c => c.bookId === currentBook.id);
+        const bookTotal = sameBookChapters.length;
+        const bookDone = sameBookChapters.filter(c => completedChapterDates[c.globalIdx]).length;
+        const bookPercent = Math.round((bookDone / bookTotal) * 100);
+
+        const sameMajorChapters = sameBookChapters.filter(c => c.major === currentCh.major);
+        const majorTotal = sameMajorChapters.length;
+        const majorDone = sameMajorChapters.filter(c => completedChapterDates[c.globalIdx]).length;
+        const majorPercent = Math.round((majorDone / majorTotal) * 100);
+
+        return {
+          bookTitle: currentBook.title,
+          bookPercent,
+          bookTotal,
+          bookDone,
+          majorNum: currentCh.major,
+          majorPercent,
+          majorTotal,
+          majorDone
+        };
+      }, [masterChapters, firstUncompletedIdx, completedChapterDates]);
+
+      const estimatedCompletionDates = useMemo(() => {
+        if (masterChapters.length === 0 || firstUncompletedIdx >= masterChapters.length) {
+          return { bookDate: "완료 👑", majorDate: "완료 🏆" };
+        }
+        
+        const currentCh = masterChapters[firstUncompletedIdx];
+        const currentBookId = currentCh.bookId;
+        const currentMajor = currentCh.major;
+
+        let maxBookDate = "";
+        let maxMajorDate = "";
+
+        Object.entries(generatedSchedule).forEach(([dateStr, dayPlan]) => {
+          if (dayPlan.isRestDay || !dayPlan.chapters) return;
+          dayPlan.chapters.forEach(ch => {
+            if (ch.bookId === currentBookId) {
+              if (maxBookDate === "" || new Date(dateStr) > new Date(maxBookDate)) {
+                maxBookDate = dateStr;
+              }
+              if (ch.major === currentMajor) {
+                if (maxMajorDate === "" || new Date(dateStr) > new Date(maxMajorDate)) {
+                  maxMajorDate = dateStr;
+                }
+              }
+            }
+          });
+        });
+
+        const formatDate = (rawStr) => {
+          if (!rawStr) return "산출 불가";
+          const d = new Date(rawStr);
+          return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+        };
+
+        return {
+          bookDate: formatDate(maxBookDate),
+          majorDate: formatDate(maxMajorDate)
+        };
+      }, [generatedSchedule, masterChapters, firstUncompletedIdx]);
+
+      const encouragementInfo = useMemo(() => {
+        if (firstUncompletedIdx >= masterChapters.length) {
+          return {
+            type: "ALL_COMPLETE",
+            message: "🏆 축하합니다! 모든 수학 발전소 코스를 완전히 마스터했습니다! 대단한 수학 히어로 달성! 👑"
+          };
+        }
+
+        const activeCh = masterChapters[firstUncompletedIdx];
+        const sameBookChapters = masterChapters.filter(c => c.bookId === activeCh.bookId);
+        const lastStepInBook = sameBookChapters[sameBookChapters.length - 1].globalIdx;
+        const stepsLeftInBook = lastStepInBook - firstUncompletedIdx + 1;
+
+        const sameMajorChapters = sameBookChapters.filter(c => c.major === activeCh.major);
+        const lastStepInMajor = sameMajorChapters[sameMajorChapters.length - 1].globalIdx;
+        const stepsLeftInMajor = lastStepInMajor - firstUncompletedIdx + 1;
+
+        if (stepsLeftInBook <= 5) {
+          return {
+            type: "BOOK_FINISH_SOON",
+            bookTitle: activeCh.bookTitle,
+            remain: stepsLeftInBook,
+            message: `🔥 와! 드디어 [${activeCh.bookTitle}] 완공 직전! 마지막 딱 ${stepsLeftInBook}단계 남았어! 한 권 완전히 격파해 버리자! 🏆`
+          };
+        }
+
+        if (stepsLeftInMajor <= 3) {
+          return {
+            type: "MAJOR_FINISH_SOON",
+            bookTitle: activeCh.bookTitle,
+            major: activeCh.major,
+            remain: stepsLeftInMajor,
+            message: `⚡ [${activeCh.bookTitle} - ${activeCh.major}단원] 마지막 보스전 진입! 이제 ${stepsLeftInMajor}단계만 더 달리면 다음 대단원으로 전진이야!`
+          };
+        }
+
+        return {
+          type: "KEEP_GOING",
+          bookTitle: activeCh.bookTitle,
+          message: `🚀 [${activeCh.bookTitle}] 멋지게 가동 중! 매일 스스로 공부하는 성취 배지를 모아봐!`
+        };
+      }, [masterChapters, firstUncompletedIdx]);
+
+      const userLevel = Math.floor(completedChapterIndices.length / 3) + 1; 
+      const xpInCurrentLevel = (completedChapterIndices.length % 3);
+      const nextLevelXpNeeded = 3;
+
+      const todaysQuest = useMemo(() => {
+        const todayStr = getLocalDateString(new Date());
+        if (generatedSchedule[todayStr] && !generatedSchedule[todayStr].isRestDay) {
+          return {
+            dateStr: todayStr,
+            chapters: generatedSchedule[todayStr].chapters,
+            isRestDay: false
+          };
+        }
+        const activeBookId = masterChapters[firstUncompletedIdx]?.bookId || "m21";
+        const currentPace = bookPaces[activeBookId] || 2;
+        const ongoing = masterChapters.slice(firstUncompletedIdx, firstUncompletedIdx + currentPace);
+        return {
+          dateStr: "스케줄 대기 중",
+          chapters: ongoing,
+          isRestDay: ongoing.length === 0
+        };
+      }, [generatedSchedule, masterChapters, firstUncompletedIdx, bookPaces]);
+
+      const triggerToast = (title, text) => {
+        setNotification({ title, text });
+      };
+
+      // 완료/취소 토글 액션 (클릭 오류 및 연쇄 밀림 버그 완전 방지)
+      const handleToggleComplete = (globalIdx, assignedDateStr) => {
+        const targetCh = masterChapters[globalIdx];
+        const label = `${targetCh.bookTitle} ${targetCh.major}단원 ${targetCh.minor}단계`;
+        const todayStr = getLocalDateString(new Date());
+        const completionDate = assignedDateStr || todayStr;
+
+        setCompletedChapterDates(prev => {
+          const next = { ...prev };
+          if (next[globalIdx]) {
+            delete next[globalIdx];
+            triggerToast("진도 복원 🔄", `[${label}] 완료가 취소되었습니다. 뒤 일정이 자동으로 다시 펼쳐집니다.`);
+          } else {
+            next[globalIdx] = completionDate;
+            triggerToast("단원 완공 ⚡", `[${label}] 학습 완료를 고정 기록했습니다!`);
+          }
+          return next;
+        });
+      };
+
+      const completeTodaysSchedule = (chapters) => {
+        if (!chapters || chapters.length === 0) return;
+        const todayStr = getLocalDateString(new Date());
+        
+        setCompletedChapterDates(prev => {
+          const next = { ...prev };
+          chapters.forEach(ch => {
+            next[ch.globalIdx] = todayStr;
+          });
+          return next;
+        });
+        triggerToast("오늘의 미션 완료 🏆", `${chapters.length}개 단원을 단번에 클리어하셨군요!`);
+      };
+
+      // 요청 5: 토/일 및 요일 비활성화 상태에서도 개별 복원 또는 강제 정전 가능
+      const toggleDateRest = (dateStr) => {
+        const d = new Date(dateStr);
+        const dayOfWeek = d.getDay();
+        const isDayNormallyActive = activeDays.includes(dayOfWeek);
+
+        if (isDayNormallyActive) {
+          // 원래 공부일인 경우 -> 쉬는 날로 가두거나 해제
+          if (skippedDates.includes(dateStr)) {
+            setSkippedDates(prev => prev.filter(x => x !== dateStr));
+            triggerToast("공부하는 날 복원", `${dateStr}에 공부를 다시 진행합니다.`);
+          } else {
+            setSkippedDates(prev => [...prev, dateStr]);
+            setForcedStudyDates(prev => prev.filter(x => x !== dateStr));
+            triggerToast("쉬는 날로 지정 🏖️", `${dateStr}을 쉬는 날로 교체했습니다.`);
+          }
+        } else {
+          // 원래 쉬는 날인 경우 -> 공부하는 날로 특별 지정하거나 해제
+          if (forcedStudyDates.includes(dateStr)) {
+            setForcedStudyDates(prev => prev.filter(x => x !== dateStr));
+            triggerToast("주말 휴식 복원", `${dateStr}을 다시 쉬는 날로 바꿨습니다.`);
+          } else {
+            setForcedStudyDates(prev => [...prev, dateStr]);
+            setSkippedDates(prev => prev.filter(x => x !== dateStr));
+            triggerToast("특별 공부날 지정 ✏️", `${dateStr}에 특별히 공부를 추가 배정합니다!`);
+          }
+        }
+      };
+
+      const adjustDatePace = (dateStr, amount) => {
+        const completedOnDay = Object.entries(completedChapterDates).filter(([_, dStr]) => dStr === dateStr).length;
+        
+        const currentPace = customPaceOverrides[dateStr] !== undefined 
+          ? customPaceOverrides[dateStr] 
+          : (bookPaces[masterChapters[firstUncompletedIdx]?.bookId || "m21"] || 2);
+        
+        const newPace = Math.max(completedOnDay, currentPace + amount); 
+        
+        if (newPace === currentPace) {
+          triggerToast("조정 제한 🛑", "이미 마친 단계 개수보다 오늘 할 일 목표를 더 줄일 수 없습니다.");
+          return;
+        }
+
+        setCustomPaceOverrides(prev => ({
+          ...prev,
+          [dateStr]: newPace
+        }));
+        triggerToast("목표 수량 조정", `${dateStr} 하루 공부 목표량을 ${newPace}개로 변경했습니다.`);
+      };
+
+      const resetSchedule = () => {
+        setCompletedChapterDates({});
+        setCustomPaceOverrides({});
+        setSkippedDates([]);
+        setForcedStudyDates([]);
+        triggerToast("학습 초기화 🔄", "모든 계획이 완전 초기화되었습니다.");
+      };
+
+      const calendarDays = useMemo(() => {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+        
+        const days = [];
+        const startOffset = firstDayOfMonth.getDay();
+        
+        const prevMonthLastDay = new Date(year, month, 0).getDate();
+        for (let i = startOffset - 1; i >= 0; i--) {
+          const d = new Date(year, month - 1, prevMonthLastDay - i);
+          days.push({ date: d, isCurrentMonth: false });
+        }
+
+        for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
+          days.push({ date: new Date(year, month, i), isCurrentMonth: true });
+        }
+
+        const remaining = 42 - days.length;
+        for (let i = 1; i <= remaining; i++) {
+          days.push({ date: new Date(year, month + 1, i), isCurrentMonth: false });
+        }
+
+        return days;
+      }, [currentMonth]);
+
+      const changeMonth = (offset) => {
+        setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
+      };
+
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, [currentMonth, completedChapterDates, showIntro, selectedDateStr, notification, encouragementInfo, activeStats, showBookPaceSettings]);
+
+      return (
+        <div className="min-h-screen flex flex-col pb-12 select-none">
+          
+          {/* --- 오프닝 가이드 모달 --- */}
+          {showIntro && (
+            <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-8 text-center border-4 border-emerald-400 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400"></div>
+                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                  <i data-lucide="zap" className="w-10 h-10 text-emerald-500"></i>
+                </div>
+                <h2 className="text-2xl font-black text-slate-800 mb-2 fancy-font">
+                  ⚡ 수학 발전소 가동 시작!
+                </h2>
+                <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                  매일 <span className="text-emerald-600 font-bold">수력충전</span> 문제집을 풀며 수학 배지를 수집하는 전용 비서가 켜졌습니다. 중2-1부터 고등 수학 전 과정이 논스톱으로 연결되어 달력을 따라 자동으로 조절됩니다.
+                </p>
+                <button
+                  onClick={() => setShowIntro(false)}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-2xl transition duration-300 transform active:scale-95 shadow-md shadow-emerald-200 text-sm fancy-font"
+                >
+                  수학 발전소 가동하기 🔌
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* --- 토스트 알림 모달 --- */}
+          {notification && (
+            <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-slate-900 text-white p-4 rounded-2xl shadow-xl flex items-start gap-3 border border-slate-700">
+              <div className="p-1.5 bg-emerald-500 text-slate-950 rounded-lg">
+                <i data-lucide="bell" className="w-4 h-4"></i>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-emerald-400">{notification.title}</h4>
+                <p className="text-xs text-slate-300 mt-1">{notification.text}</p>
+              </div>
+              <button 
+                onClick={() => setNotification(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <i data-lucide="x" className="w-4 h-4"></i>
+              </button>
+            </div>
+          )}
+
+          {/* --- 상단 헤더 --- */}
+          <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-4">
+            <div className="max-w-[1500px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-md shadow-emerald-100">
+                  <i data-lucide="zap" className="w-6 h-6 animate-pulse"></i>
+                </div>
+                <div>
+                  <h1 className="text-lg font-black text-slate-800 tracking-tight fancy-font flex items-center gap-1.5">
+                    수력발전소 <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold">수력충전 스케줄러</span>
+                  </h1>
+                  <p className="text-xs text-slate-400">중2-1에서 고등 미적분/확통까지 - 무한 연계 수학 완주 플래너</p>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* --- 대형 가로 모드 최적화 (3:9 그리드) --- */}
+          <main className="max-w-[1550px] mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full flex-1">
+            
+            {/* 좌측 진행상황 및 상태판 */}
+            <div className="lg:col-span-3 space-y-6">
+              
+              {/* 성취 레벨 카드 */}
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-cyan-500/10 rounded-full blur-2xl"></div>
+
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className="w-16 h-16 bg-gradient-to-tr from-emerald-400 to-cyan-400 rounded-2xl flex items-center justify-center text-slate-950 font-black text-2xl fancy-font shadow-lg">
+                    Lv.{userLevel}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg fancy-font flex items-center gap-2">
+                      수학 히어로 ⚡
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">문제를 완료해 레벨 업하세요!</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-2 relative z-10">
+                  <div className="flex justify-between text-xs font-bold text-slate-300">
+                    <span>레벨 업까지 에너지(XP)</span>
+                    <span>{xpInCurrentLevel} / {nextLevelXpNeeded} XP</span>
+                  </div>
+                  <div className="h-3 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                    <div 
+                      className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full transition-all duration-500"
+                      style={{ width: `${(xpInCurrentLevel / nextLevelXpNeeded) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 실시간 목표 진도 달성율 */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-5">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <i data-lucide="bar-chart-2" className="w-4 h-4 text-emerald-500"></i>
+                  실시간 목표 진도 달성율
+                </h4>
+                
+                {/* 현재 격파 교재 지표 */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-xs font-bold text-slate-500">현재 격파중인 교재</p>
+                      <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">{activeStats.bookTitle}</span>
+                    </div>
+                    <div className="flex justify-between items-end mb-1">
+                      <span className="text-xl font-black text-slate-800 fancy-font">{activeStats.bookPercent}%</span>
+                      <span className="text-[10px] text-slate-400 font-bold">{activeStats.bookDone} / {activeStats.bookTotal} 단계 완료</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${activeStats.bookPercent}%` }}></div>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
+                    <span className="flex items-center gap-1"><i data-lucide="calendar" className="w-3.5 h-3.5 text-slate-400"></i> 책 예상 완공일</span>
+                    <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{estimatedCompletionDates.bookDate}</span>
+                  </div>
+                </div>
+
+                {/* 현재 격파 대단원 지표 */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-xs font-bold text-slate-500">현재 타겟 대단원</p>
+                      <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{activeStats.majorNum}단원</span>
+                    </div>
+                    <div className="flex justify-between items-end mb-1">
+                      <span className="text-xl font-black text-slate-800 fancy-font">{activeStats.majorPercent}%</span>
+                      <span className="text-[10px] text-slate-400 font-bold">{activeStats.majorDone} / {activeStats.majorTotal} 단계 격파</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-indigo-500 rounded-full transition-all duration-500" style={{ width: `${activeStats.majorPercent}%` }}></div>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
+                    <span className="flex items-center gap-1"><i data-lucide="flag" className="w-3.5 h-3.5 text-slate-400"></i> 단원 완공일</span>
+                    <span className="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{estimatedCompletionDates.majorDate}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 격려/동기부여 박스 */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm">
+                <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-1.5">
+                  <i data-lucide="sparkles" className="w-4 h-4 text-emerald-500"></i>
+                  수력 충전 응원 피드
+                </h4>
+                
+                {encouragementInfo.type === "BOOK_FINISH_SOON" && (
+                  <div className="boss-banner bg-gradient-to-br from-amber-500 to-amber-600 text-white p-4 rounded-2xl relative overflow-hidden">
+                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                    <div className="flex gap-3">
+                      <div className="p-2 bg-white/20 rounded-xl h-10 w-10 flex items-center justify-center font-black text-lg shrink-0">🏆</div>
+                      <div>
+                        <h5 className="font-extrabold text-xs text-amber-100">교재 격파 직전!</h5>
+                        <p className="text-xs font-bold mt-1 leading-relaxed">{encouragementInfo.message}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {encouragementInfo.type === "MAJOR_FINISH_SOON" && (
+                  <div className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-4 rounded-2xl">
+                    <div className="flex gap-3">
+                      <div className="p-2 bg-white/20 rounded-xl h-10 w-10 flex items-center justify-center font-black text-lg shrink-0">⚡</div>
+                      <div>
+                        <h5 className="font-extrabold text-xs text-indigo-100">단원 완공 코앞!</h5>
+                        <p className="text-xs font-bold mt-1 leading-relaxed">{encouragementInfo.message}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {encouragementInfo.type === "KEEP_GOING" && (
+                  <div className="bg-emerald-50 text-emerald-800 p-4 rounded-2xl border border-emerald-100">
+                    <div className="flex gap-3">
+                      <div className="p-2 bg-emerald-100 rounded-xl h-10 w-10 flex items-center justify-center text-emerald-600 shrink-0">
+                        <i data-lucide="flame" className="w-6 h-6"></i>
+                      </div>
+                      <div>
+                        <h5 className="font-extrabold text-xs text-emerald-700">성실 가속중!</h5>
+                        <p className="text-xs font-medium mt-1 leading-relaxed">{encouragementInfo.message}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 오늘의 완주 퀘스트 (동적 리밸런싱 완벽 탑재) */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-extrabold text-slate-800 flex items-center gap-2 text-sm uppercase tracking-wider">
+                    <i data-lucide="swords" className="w-5 h-5 text-rose-500"></i>
+                    오늘의 완주 퀘스트
+                  </h3>
+                  <span className="text-xs bg-rose-50 text-rose-600 font-bold px-2 py-0.5 rounded-full">오늘분</span>
+                </div>
+
+                {!todaysQuest.isRestDay && todaysQuest.chapters.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      {todaysQuest.chapters.map((ch) => {
+                        const isDone = !!completedChapterDates[ch.globalIdx];
+                        const todayStr = getLocalDateString(new Date());
+                        const theme = getBookTheme(ch.bookId, ch.major);
+                        return (
+                          <div 
+                            key={ch.idStr}
+                            onClick={() => handleToggleComplete(ch.globalIdx, todayStr)}
+                            className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition duration-150 cursor-pointer ${
+                              isDone 
+                                ? 'border-emerald-300 bg-emerald-50/40 text-slate-400 line-through' 
+                                : `${theme.borderClass} ${theme.bgClass} hover:scale-[1.01] hover:shadow-sm`
+                            }`}
+                          >
+                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold transition ${isDone ? 'bg-emerald-500 text-white' : 'bg-white border-2 border-slate-300 text-slate-500'}`}>
+                              {isDone ? <i data-lucide="check" className="w-3.5 h-3.5"></i> : ch.minor}
+                            </div>
+                            <div className="flex-1 text-left">
+                              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{ch.bookTitle}</p>
+                              <p className="text-sm font-black text-slate-800">
+                                {ch.major}단원 {ch.minor}단계
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-2 text-indigo-500">
+                      <i data-lucide="coffee" className="w-6 h-6"></i>
+                    </div>
+                    <p className="text-sm font-bold text-slate-600">공부 에너지를 충전하세요!</p>
+                  </div>
+                )}
+              </div>
+
+              {/* 수집 배지 보드 */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+                <h3 className="font-extrabold text-slate-800 flex items-center gap-2 text-sm uppercase tracking-wider mb-4">
+                  <i data-lucide="award" className="w-5 h-5 text-indigo-500"></i>
+                  수집 배지
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {BADGES.map((badge) => {
+                    const isEarned = userLevel >= badge.level;
+                    return (
+                      <div 
+                        key={badge.level}
+                        className={`p-3 rounded-2xl border text-center transition ${isEarned ? 'border-indigo-100 bg-indigo-50/20' : 'border-slate-100 bg-slate-50/50 opacity-40'}`}
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 ${isEarned ? badge.color : 'bg-slate-200 text-slate-400'}`}>
+                          <i data-lucide={badge.icon} className="w-5 h-5"></i>
+                        </div>
+                        <p className="text-xs font-bold text-slate-800 line-clamp-1">{badge.title}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            {/* 우측 마스터 캘린더 판넬 */}
+            <div className="lg:col-span-9 space-y-6">
+              
+              {/* 스케줄 제어 장치 */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm font-medium">
+                <h3 className="font-extrabold text-slate-800 mb-4 flex items-center gap-2">
+                  <i data-lucide="settings" className="w-5 h-5 text-emerald-500"></i>
+                  마스터 스케줄링 옵션 설정
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 시작 일자 설정 */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                      <i data-lucide="calendar-days" className="w-3.5 h-3.5"></i>
+                      진도 배정 시작일
+                    </label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                        triggerToast("배정일 재조정", "미수수행 전체 공부 계획이 다시 정렬되었습니다.");
+                      }}
+                      className="w-full text-xs font-bold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50/50 text-slate-700 focus:outline-none focus:border-emerald-400"
+                    />
+                  </div>
+
+                  {/* 공부 활성 요일 */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                      <i data-lucide="clock" className="w-3.5 h-3.5"></i>
+                      학습 활성 요일 지정
+                    </label>
+                    <div className="flex gap-1 justify-between bg-slate-50 p-1 rounded-xl border border-slate-100">
+                      {["일", "월", "화", "수", "목", "금", "토"].map((dayName, idx) => {
+                        const isActive = activeDays.includes(idx);
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              if (isActive) {
+                                if (activeDays.length > 1) {
+                                  setActiveDays(prev => prev.filter(d => d !== idx));
+                                }
+                              } else {
+                                setActiveDays(prev => [...prev, idx].sort());
+                              }
+                            }}
+                            className={`flex-1 py-1.5 text-xs font-black rounded-lg transition ${isActive ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-200'}`}
+                          >
+                            {dayName}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 교재별 개별 분량 지정 아코디언 */}
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <button 
+                    onClick={() => setShowBookPaceSettings(!showBookPaceSettings)}
+                    className="flex justify-between items-center w-full bg-slate-50 hover:bg-slate-100 p-3 rounded-2xl border border-slate-200/50 text-xs text-slate-600 font-bold transition"
+                  >
+                    <span className="flex items-center gap-2">
+                      <i data-lucide="book-open" className="w-4 h-4 text-emerald-500"></i>
+                      📚 각 교재별 하루 권장 목표 분량(소단원 개수) 개별 맞춤 설정
+                    </span>
+                    <i data-lucide={showBookPaceSettings ? "chevron-up" : "chevron-down"} className="w-4 h-4"></i>
+                  </button>
+
+                  {showBookPaceSettings && (
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-200/30">
+                      {CURRICULUM_DATA.map((book) => (
+                        <div key={book.id} className="bg-white p-2.5 rounded-xl border border-slate-100 flex flex-col items-center gap-1 shadow-2xs">
+                          <span className="text-[10px] font-black text-slate-700 truncate w-full text-center">{book.title}</span>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <button 
+                              onClick={() => {
+                                setBookPaces(prev => ({ ...prev, [book.id]: Math.max(1, prev[book.id] - 1) }));
+                                triggerToast("책 목표 조율", `[${book.title}] 하루 공부 분량을 줄였습니다.`);
+                              }}
+                              className="w-5 h-5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-extrabold rounded-md flex items-center justify-center"
+                            >
+                              -
+                            </button>
+                            <span className="text-xs font-bold text-slate-800">{bookPaces[book.id]}개</span>
+                            <button 
+                              onClick={() => {
+                                setBookPaces(prev => ({ ...prev, [book.id]: Math.min(10, prev[book.id] + 1) }));
+                                triggerToast("책 목표 조율", `[${book.title}] 하루 공부 분량을 늘렸습니다.`);
+                              }}
+                              className="w-5 h-5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-extrabold rounded-md flex items-center justify-center"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
+                  <p>💡 아무 날짜나 터치하면 **주말이어도 공부를 추가**하거나, **공부날을 휴가날로 정전**시킬 수 있습니다!</p>
+                  <button
+                    onClick={resetSchedule}
+                    className="text-red-500 hover:text-red-600 font-bold flex items-center gap-1 text-xs"
+                  >
+                    <i data-lucide="rotate-ccw" className="w-3.5 h-3.5"></i>
+                    학습 데이터 전체 초기화
+                  </button>
+                </div>
+              </div>
+
+              {/* 달력 보드 */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-black text-slate-800 fancy-font">
+                    {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월 달력
+                  </h2>
+                  
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => changeMonth(-1)} className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600">
+                      <i data-lucide="chevron-left" className="w-4 h-4"></i>
+                    </button>
+                    <button onClick={() => setCurrentMonth(new Date())} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-600">
+                      오늘
+                    </button>
+                    <button onClick={() => changeMonth(1)} className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600">
+                      <i data-lucide="chevron-right" className="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 요일 */}
+                <div className="grid grid-cols-7 gap-1.5 text-center font-bold text-xs text-slate-400 mb-2">
+                  <div className="text-red-500">일</div>
+                  <div>월</div>
+                  <div>화</div>
+                  <div>수</div>
+                  <div>목</div>
+                  <div>금</div>
+                  <div className="text-blue-500">토</div>
+                </div>
+
+                {/* 날짜 타일 */}
+                <div className="grid grid-cols-7 gap-1.5">
+                  {calendarDays.map(({ date, isCurrentMonth }, idx) => {
+                    const dateStr = getLocalDateString(date);
+                    const isToday = getLocalDateString(new Date()) === dateStr;
+                    const dayPlan = generatedSchedule[dateStr];
+                    
+                    // 해당 일의 모든 배정 소단원이 완료 상태인지 체크
+                    const isCompleted = dayPlan && !dayPlan.isRestDay && dayPlan.chapters.length > 0 && dayPlan.chapters.every(ch => completedChapterDates[ch.globalIdx]);
+
+                    let bgStyle = "bg-white";
+                    let borderStyle = "border-slate-100 hover:border-slate-300";
+
+                    const hasActiveChapters = dayPlan && !dayPlan.isRestDay && dayPlan.chapters.length > 0;
+                    const firstCh = hasActiveChapters ? dayPlan.chapters[0] : null;
+                    const theme = firstCh ? getBookTheme(firstCh.bookId, firstCh.major) : null;
+
+                    if (!isCurrentMonth) {
+                      bgStyle = "bg-slate-50/30 opacity-20";
+                    } else if (dayPlan && dayPlan.isRestDay) {
+                      bgStyle = "bg-amber-50/70 text-slate-600";
+                      borderStyle = "border-amber-200/50";
+                    } else if (isCompleted) {
+                      // 요청 4: 완료한 날은 은은하고 흐린 연녹색 톤으로 가라앉힘 (오버뷰 가독성 증대)
+                      bgStyle = "bg-emerald-500/10 opacity-60 text-slate-500";
+                      borderStyle = "border-emerald-200";
+                    } else if (theme) {
+                      bgStyle = theme.bgClass;
+                      borderStyle = theme.borderClass;
+                    } else if (isToday) {
+                      borderStyle = "border-slate-900 ring-2 ring-slate-900/15";
+                    }
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => setSelectedDateStr(dateStr)}
+                        className={`min-h-[110px] p-2.5 rounded-2xl border transition duration-150 cursor-pointer flex flex-col justify-between ${bgStyle} ${borderStyle}`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className={`text-[11px] font-bold ${
+                            isToday ? 'bg-slate-900 text-white w-5 h-5 flex items-center justify-center rounded-full' : 'text-slate-500'
+                          }`}>
+                            {date.getDate()}
+                          </span>
+
+                          {dayPlan && dayPlan.isRestDay && (
+                            <span className="text-[9px] bg-amber-200/50 text-amber-800 font-extrabold px-1.5 py-0.5 rounded">쉬는날</span>
+                          )}
+                          {isCompleted && (
+                            <span className="text-[9px] bg-emerald-500/20 text-emerald-800 font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                              완공🏆
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 내용물 칩 */}
+                        <div className="flex-1 mt-2 flex flex-col justify-end">
+                          {dayPlan && !dayPlan.isRestDay && dayPlan.chapters.length > 0 ? (
+                            <div className="space-y-1">
+                              <div className="text-[10px] font-black text-slate-700 bg-white/90 p-1.5 rounded-xl border border-slate-200/60 flex flex-col gap-0.5">
+                                <span className={`${theme?.text || 'text-slate-700'} truncate font-extrabold`}>{dayPlan.chapters[0].bookTitle}</span>
+                                <span className="text-[9px] text-slate-500 truncate">
+                                  {dayPlan.chapters[0].major}단원 {dayPlan.chapters[0].minor}단계
+                                  {dayPlan.chapters.length > 1 && `~${dayPlan.chapters[dayPlan.chapters.length - 1].minor}단계`}
+                                </span>
+                              </div>
+                              <div className="flex gap-0.5 justify-center mt-0.5">
+                                {dayPlan.chapters.map(ch => {
+                                  const done = !!completedChapterDates[ch.globalIdx];
+                                  return (
+                                    <span key={ch.idStr} className={`w-1.5 h-1.5 rounded-full ${done ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            dayPlan && dayPlan.isRestDay && (
+                              <p className="text-[9px] text-slate-400 font-bold text-center truncate px-0.5">
+                                {dayPlan.reason}
+                              </p>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+          </main>
+
+          {/* --- 일별 공부내용 상세/완료처리 제어 모달 --- */}
+          {selectedDateStr && selectedDateDetails && (
+            <div className="fixed inset-0 z-40 bg-slate-900/55 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-2 border-slate-100 text-left">
+                
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400">학습 매니저 세부 제어</h4>
+                    <h3 className="text-lg font-black text-slate-800 fancy-font mt-0.5">
+                      📅 {selectedDateStr} 스케줄 정보
+                    </h3>
+                  </div>
+                  <button onClick={() => setSelectedDateStr(null)} className="p-1 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" className="w-4 h-4"></i>
+                  </button>
+                </div>
+
+                <div className="space-y-4 my-4">
+                  {selectedDateDetails.isRestDay ? (
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl text-center">
+                      <p className="text-lg">🏖️</p>
+                      <p className="text-sm font-extrabold text-amber-800 mt-1">오늘은 휴식하는 날입니다!</p>
+                      <p className="text-xs text-amber-600 mt-0.5">{selectedDateDetails.reason || "쉬어가는 정거장"}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
+                        <p className="text-xs text-emerald-800 font-bold mb-1">📘 해당 날짜 배정 도서</p>
+                        <p className="text-sm font-black text-slate-800">{selectedDateDetails.chapters[0]?.bookTitle || "통합 연계 노선"}</p>
+                      </div>
+
+                      <p className="text-xs font-bold text-slate-400">학습 소단원 완료 현황 (클릭 시 토글 및 리밸런싱 고정)</p>
+                      {/* 요청 3: 달력 상세 리스트 내부 완료 클릭 시에도 버그가 없도록 토글 함수 연결 */}
+                      <div className="space-y-1.5 max-h-[160px] overflow-y-auto">
+                        {selectedDateDetails.chapters.map((ch) => {
+                          const done = !!completedChapterDates[ch.globalIdx];
+                          return (
+                            <div 
+                              key={ch.idStr}
+                              onClick={() => handleToggleComplete(ch.globalIdx, selectedDateStr)}
+                              className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition ${
+                                done 
+                                  ? 'bg-slate-50 border-emerald-200 text-slate-400 line-through' 
+                                  : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-300'
+                              }`}
+                            >
+                              <i data-lucide={done ? "check-circle-2" : "circle"} className={`w-4 h-4 shrink-0 ${done ? 'text-emerald-500' : 'text-slate-300'}`}></i>
+                              <span className="font-extrabold text-slate-500 shrink-0">[{ch.bookTitle}]</span>
+                              <span className="truncate font-black text-slate-700">{ch.major}단원 {ch.minor}단계</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 수동 휴식/공부 제어판 */}
+                  <div className="pt-4 border-t border-slate-100 space-y-3">
+                    {/* 요청 5: 평일/주말 여부에 관계없이 상호 전환할 수 있는 직관적 버튼 제공 */}
+                    <button
+                      onClick={() => {
+                        toggleDateRest(selectedDateStr);
+                        setSelectedDateStr(null);
+                      }}
+                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-xl text-xs transition duration-200 flex items-center justify-center gap-2"
+                    >
+                      <i data-lucide="coffee" className="w-4 h-4 text-slate-500"></i>
+                      {selectedDateDetails.isRestDay ? "공부하는 날로 특별 전환하기 ✏️" : "이 날을 '쉬는 날'로 빼버리기 🏖️"}
+                    </button>
+
+                    {!selectedDateDetails.isRestDay && (
+                      <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl">
+                        <span className="text-xs font-bold text-slate-500 font-medium">이 날 분량 단독 조율:</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => adjustDatePace(selectedDateStr, -1)}
+                            className="w-7 h-7 bg-white border border-slate-200 hover:bg-slate-100 rounded text-slate-600 font-extrabold text-xs"
+                          >
+                            -
+                          </button>
+                          <span className="text-xs font-black text-slate-800">
+                            {customPaceOverrides[selectedDateStr] !== undefined 
+                              ? customPaceOverrides[selectedDateStr] 
+                              : (bookPaces[selectedDateDetails.chapters[0]?.bookId] || 2)
+                            }개
+                          </span>
+                          <button
+                            onClick={() => adjustDatePace(selectedDateStr, 1)}
+                            className="w-7 h-7 bg-white border border-slate-200 hover:bg-slate-100 rounded text-slate-600 font-extrabold text-xs"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button onClick={() => setSelectedDateStr(null)} className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs">
+                    확인 완료
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
