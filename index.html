@@ -56,7 +56,7 @@
 
   <!-- React Code with Babel -->
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useRef } = React;
 
     const CURRICULUM_DATA = [
       {
@@ -192,6 +192,27 @@
         badgeClass: base.badge,
         bgClass: base.bg
       };
+    };
+
+    const Icon = ({ name, className = "" }) => {
+      const hostRef = useRef(null);
+
+      useEffect(() => {
+        const host = hostRef.current;
+        if (!host) return;
+
+        host.innerHTML = "";
+        const icon = document.createElement("i");
+        icon.setAttribute("data-lucide", name);
+        icon.setAttribute("class", className);
+        host.appendChild(icon);
+
+        if (window.lucide && window.lucide.createIcons) {
+          window.lucide.createIcons();
+        }
+      }, [name, className]);
+
+      return <span ref={hostRef} className={`inline-flex shrink-0 ${className}`} aria-hidden="true"></span>;
     };
 
     function App() {
@@ -638,12 +659,6 @@
         setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
       };
 
-      useEffect(() => {
-        if (window.lucide) {
-          window.lucide.createIcons();
-        }
-      }, [currentMonth, completedChapterDates, showIntro, selectedDateStr, notification, encouragementInfo, activeStats, showBookPaceSettings]);
-
       return (
         <div className="min-h-screen flex flex-col pb-12 select-none">
           
@@ -653,7 +668,7 @@
               <div className="bg-white rounded-3xl max-w-lg w-full p-8 text-center border-4 border-emerald-400 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400"></div>
                 <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                  <i data-lucide="zap" className="w-10 h-10 text-emerald-500"></i>
+                  <Icon name="zap" className="w-10 h-10 text-emerald-500" />
                 </div>
                 <h2 className="text-2xl font-black text-slate-800 mb-2 fancy-font">
                   ⚡ 수학 발전소 가동 시작!
@@ -675,7 +690,7 @@
           {notification && (
             <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-slate-900 text-white p-4 rounded-2xl shadow-xl flex items-start gap-3 border border-slate-700">
               <div className="p-1.5 bg-emerald-500 text-slate-950 rounded-lg">
-                <i data-lucide="bell" className="w-4 h-4"></i>
+                <Icon name="bell" className="w-4 h-4" />
               </div>
               <div className="flex-1">
                 <h4 className="text-sm font-bold text-emerald-400">{notification.title}</h4>
@@ -685,7 +700,7 @@
                 onClick={() => setNotification(null)}
                 className="text-slate-400 hover:text-white"
               >
-                <i data-lucide="x" className="w-4 h-4"></i>
+                <Icon name="x" className="w-4 h-4" />
               </button>
             </div>
           )}
@@ -695,7 +710,7 @@
             <div className="max-w-[1500px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-md shadow-emerald-100">
-                  <i data-lucide="zap" className="w-6 h-6 animate-pulse"></i>
+                  <Icon name="zap" className="w-6 h-6 animate-pulse" />
                 </div>
                 <div>
                   <h1 className="text-lg font-black text-slate-800 tracking-tight fancy-font flex items-center gap-1.5">
@@ -747,7 +762,7 @@
               {/* 실시간 목표 진도 달성율 */}
               <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-5">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <i data-lucide="bar-chart-2" className="w-4 h-4 text-emerald-500"></i>
+                  <Icon name="bar-chart-2" className="w-4 h-4 text-emerald-500" />
                   실시간 목표 진도 달성율
                 </h4>
                 
@@ -767,7 +782,7 @@
                     </div>
                   </div>
                   <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
-                    <span className="flex items-center gap-1"><i data-lucide="calendar" className="w-3.5 h-3.5 text-slate-400"></i> 책 예상 완공일</span>
+                    <span className="flex items-center gap-1"><Icon name="calendar" className="w-3.5 h-3.5 text-slate-400" /> 책 예상 완공일</span>
                     <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{estimatedCompletionDates.bookDate}</span>
                   </div>
                 </div>
@@ -788,7 +803,7 @@
                     </div>
                   </div>
                   <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
-                    <span className="flex items-center gap-1"><i data-lucide="flag" className="w-3.5 h-3.5 text-slate-400"></i> 단원 완공일</span>
+                    <span className="flex items-center gap-1"><Icon name="flag" className="w-3.5 h-3.5 text-slate-400" /> 단원 완공일</span>
                     <span className="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{estimatedCompletionDates.majorDate}</span>
                   </div>
                 </div>
@@ -797,7 +812,7 @@
               {/* 격려/동기부여 박스 */}
               <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm">
                 <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-1.5">
-                  <i data-lucide="sparkles" className="w-4 h-4 text-emerald-500"></i>
+                  <Icon name="sparkles" className="w-4 h-4 text-emerald-500" />
                   수력 충전 응원 피드
                 </h4>
                 
@@ -830,7 +845,7 @@
                   <div className="bg-emerald-50 text-emerald-800 p-4 rounded-2xl border border-emerald-100">
                     <div className="flex gap-3">
                       <div className="p-2 bg-emerald-100 rounded-xl h-10 w-10 flex items-center justify-center text-emerald-600 shrink-0">
-                        <i data-lucide="flame" className="w-6 h-6"></i>
+                        <Icon name="flame" className="w-6 h-6" />
                       </div>
                       <div>
                         <h5 className="font-extrabold text-xs text-emerald-700">성실 가속중!</h5>
@@ -845,7 +860,7 @@
               <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-extrabold text-slate-800 flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <i data-lucide="swords" className="w-5 h-5 text-rose-500"></i>
+                    <Icon name="swords" className="w-5 h-5 text-rose-500" />
                     오늘의 완주 퀘스트
                   </h3>
                   <span className="text-xs bg-rose-50 text-rose-600 font-bold px-2 py-0.5 rounded-full">오늘분</span>
@@ -869,7 +884,7 @@
                             }`}
                           >
                             <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold transition ${isDone ? 'bg-emerald-500 text-white' : 'bg-white border-2 border-slate-300 text-slate-500'}`}>
-                              {isDone ? <i data-lucide="check" className="w-3.5 h-3.5"></i> : ch.minor}
+                              {isDone ? <Icon name="check" className="w-3.5 h-3.5" /> : ch.minor}
                             </div>
                             <div className="flex-1 text-left">
                               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{ch.bookTitle}</p>
@@ -885,7 +900,7 @@
                 ) : (
                   <div className="text-center py-8 bg-slate-50 rounded-2xl border border-slate-100">
                     <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-2 text-indigo-500">
-                      <i data-lucide="coffee" className="w-6 h-6"></i>
+                      <Icon name="coffee" className="w-6 h-6" />
                     </div>
                     <p className="text-sm font-bold text-slate-600">공부 에너지를 충전하세요!</p>
                   </div>
@@ -895,7 +910,7 @@
               {/* 수집 배지 보드 */}
               <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
                 <h3 className="font-extrabold text-slate-800 flex items-center gap-2 text-sm uppercase tracking-wider mb-4">
-                  <i data-lucide="award" className="w-5 h-5 text-indigo-500"></i>
+                  <Icon name="award" className="w-5 h-5 text-indigo-500" />
                   수집 배지
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -907,7 +922,7 @@
                         className={`p-3 rounded-2xl border text-center transition ${isEarned ? 'border-indigo-100 bg-indigo-50/20' : 'border-slate-100 bg-slate-50/50 opacity-40'}`}
                       >
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 ${isEarned ? badge.color : 'bg-slate-200 text-slate-400'}`}>
-                          <i data-lucide={badge.icon} className="w-5 h-5"></i>
+                          <Icon name={badge.icon} className="w-5 h-5" />
                         </div>
                         <p className="text-xs font-bold text-slate-800 line-clamp-1">{badge.title}</p>
                       </div>
@@ -924,7 +939,7 @@
               {/* 스케줄 제어 장치 */}
               <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm font-medium">
                 <h3 className="font-extrabold text-slate-800 mb-4 flex items-center gap-2">
-                  <i data-lucide="settings" className="w-5 h-5 text-emerald-500"></i>
+                  <Icon name="settings" className="w-5 h-5 text-emerald-500" />
                   마스터 스케줄링 옵션 설정
                 </h3>
                 
@@ -932,7 +947,7 @@
                   {/* 시작 일자 설정 */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
-                      <i data-lucide="calendar-days" className="w-3.5 h-3.5"></i>
+                      <Icon name="calendar-days" className="w-3.5 h-3.5" />
                       진도 배정 시작일
                     </label>
                     <input
@@ -949,7 +964,7 @@
                   {/* 공부 활성 요일 */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
-                      <i data-lucide="clock" className="w-3.5 h-3.5"></i>
+                      <Icon name="clock" className="w-3.5 h-3.5" />
                       학습 활성 요일 지정
                     </label>
                     <div className="flex gap-1 justify-between bg-slate-50 p-1 rounded-xl border border-slate-100">
@@ -984,10 +999,10 @@
                     className="flex justify-between items-center w-full bg-slate-50 hover:bg-slate-100 p-3 rounded-2xl border border-slate-200/50 text-xs text-slate-600 font-bold transition"
                   >
                     <span className="flex items-center gap-2">
-                      <i data-lucide="book-open" className="w-4 h-4 text-emerald-500"></i>
+                      <Icon name="book-open" className="w-4 h-4 text-emerald-500" />
                       📚 각 교재별 하루 권장 목표 분량(소단원 개수) 개별 맞춤 설정
                     </span>
-                    <i data-lucide={showBookPaceSettings ? "chevron-up" : "chevron-down"} className="w-4 h-4"></i>
+                    <Icon name={showBookPaceSettings ? "chevron-up" : "chevron-down"} className="w-4 h-4" />
                   </button>
 
                   {showBookPaceSettings && (
@@ -1028,7 +1043,7 @@
                     onClick={resetSchedule}
                     className="text-red-500 hover:text-red-600 font-bold flex items-center gap-1 text-xs"
                   >
-                    <i data-lucide="rotate-ccw" className="w-3.5 h-3.5"></i>
+                    <Icon name="rotate-ccw" className="w-3.5 h-3.5" />
                     학습 데이터 전체 초기화
                   </button>
                 </div>
@@ -1043,13 +1058,13 @@
                   
                   <div className="flex items-center gap-2">
                     <button onClick={() => changeMonth(-1)} className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600">
-                      <i data-lucide="chevron-left" className="w-4 h-4"></i>
+                      <Icon name="chevron-left" className="w-4 h-4" />
                     </button>
                     <button onClick={() => setCurrentMonth(new Date())} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-600">
                       오늘
                     </button>
                     <button onClick={() => changeMonth(1)} className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600">
-                      <i data-lucide="chevron-right" className="w-4 h-4"></i>
+                      <Icon name="chevron-right" className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -1171,7 +1186,7 @@
                     </h3>
                   </div>
                   <button onClick={() => setSelectedDateStr(null)} className="p-1 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 transition">
-                    <i data-lucide="x" className="w-4 h-4"></i>
+                    <Icon name="x" className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -1204,7 +1219,7 @@
                                   : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-300'
                               }`}
                             >
-                              <i data-lucide={done ? "check-circle-2" : "circle"} className={`w-4 h-4 shrink-0 ${done ? 'text-emerald-500' : 'text-slate-300'}`}></i>
+                              <Icon name={done ? "check-circle-2" : "circle"} className={`w-4 h-4 shrink-0 ${done ? 'text-emerald-500' : 'text-slate-300'}`} />
                               <span className="font-extrabold text-slate-500 shrink-0">[{ch.bookTitle}]</span>
                               <span className="truncate font-black text-slate-700">{ch.major}단원 {ch.minor}단계</span>
                             </div>
@@ -1224,7 +1239,7 @@
                       }}
                       className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-xl text-xs transition duration-200 flex items-center justify-center gap-2"
                     >
-                      <i data-lucide="coffee" className="w-4 h-4 text-slate-500"></i>
+                      <Icon name="coffee" className="w-4 h-4 text-slate-500" />
                       {selectedDateDetails.isRestDay ? "공부하는 날로 특별 전환하기 ✏️" : "이 날을 '쉬는 날'로 빼버리기 🏖️"}
                     </button>
 
